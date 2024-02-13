@@ -1,0 +1,165 @@
+.todocard{
+  display: flex;
+}
+
+
+.outerPage{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #F1EAFF;
+}
+.todoOut{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 2px solid #D0A2F7;
+  border-radius: 10px;
+  justify-content: space-between;
+  height: 80vh;
+  min-width: 300px;
+  width: 50%;
+  /* overflow: hidden; */
+  position: relative;
+}
+
+
+.todoOut .section1 {
+  width: 100%;
+  height: 10%;
+  background-color: #D0A2F7;
+ display: flex;
+ align-items: center;
+}
+
+.todoOut h1{
+  width: 100%;
+  text-align: center;
+  padding: 10px;
+  color: white;
+}
+
+
+
+.openModalBtn{
+  position: absolute;
+  bottom: -40px;
+  background-color: #D0A2F7;
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 70px;
+  width: 80px;
+  height: 80px;
+}
+
+
+.createTodoModal{
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.createTodoModalIn{
+  background-color: #D0A2F7;
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.createTodoModalIn input{
+  width: 300px;
+  padding: 20px;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  font-size: 20px;
+  color: white;
+}
+
+.createTodoModalIn button{
+  color: #D0A2F7;
+  background-color: white;
+  margin: 5px;
+  width: 50px;
+  height: 50px;
+  border: none;
+  outline: none;
+  font-size: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+
+
+
+.todos{
+  height: 90%;
+  background-color: white;
+  width: 100%;
+  overflow-y: scroll;
+}
+
+.todos::-webkit-scrollbar {
+  width: 10px;
+}
+
+.todos::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.todos::-webkit-scrollbar-thumb {
+  background: #888;
+}
+
+.todocard{
+  display: flex;
+  background-color: #F1EAFF;
+  margin: 20px 5px;
+  padding: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.icons{
+  display: flex;
+  gap: 10px;
+}
+
+
+.icons svg{
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+}
+
+.taskpending{
+  color: #D0A2F7;
+  font-size: 30px;
+  font-weight: 400;
+}
+
+.taskdone{
+  color: rgb(205, 205, 205);
+  text-decoration: line-through;
+}
+
+.noTodos{
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.noTodos h3{
+  color: #D0A2F7;
+  font-size: 30px;
+  font-weight: 400;
+}

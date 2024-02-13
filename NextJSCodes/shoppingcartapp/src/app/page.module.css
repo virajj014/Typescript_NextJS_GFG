@@ -1,0 +1,26 @@
+.home{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  min-height: 80vh;
+}
+
+.home h1{
+  font-size: 2rem;
+  font-weight: 500;
+  color: #333;
+}
+
+
+.home button{
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: #333;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+}
