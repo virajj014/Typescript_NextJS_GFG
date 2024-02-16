@@ -10,23 +10,36 @@ const responseFunction = require('../utils/responseFunction');
 const fs = require('fs');
 const errorHandler = require('../middlewares/errorMiddleware');
 const authTokenHandler = require('../middlewares/checkAuthToken');
+const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const dotenv = require('dotenv');
+dotenv.config();
+
+const s3Client = new S3Client({
+    region: process.env.AWS_REGION,
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+    }
+})
+
 
 
 async function mailer(recieveremail, code) {
     let transporter = nodemailer.createTransport({
         host: "smtp.gmail.com",
         port: 587,
-        secure: false, 
+        secure: false,
         requireTLS: true,
         auth: {
-            user : "virajj014@gmail.com",
-            pass : "kakw vytc cmkr awhq"
+            user: "virajj014@gmail.com",
+            pass: "kakw vytc cmkr awhq"
         }
     })
 
-    let info =  await transporter.sendMail({
-        from : "Team BitS",
-        to : recieveremail,
+    let info = await transporter.sendMail({
+        from: "Team BitS",
+        to: recieveremail,
         subject: "OTP for verification",
         text: "Your OTP is " + code,
         html: "<b>Your OTP is " + code + "</b>",
@@ -39,28 +52,7 @@ async function mailer(recieveremail, code) {
 }
 
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, './public');
-    },
-    filename: (req, file, cb) => {
-        let fileType = file.mimetype.split('/')[1];
-        console.log(req.headers.filename);
-        cb(null, `${Date.now()}.${fileType}`);
-    }
-})
 
-const upload = multer({ storage: storage });
-
-
-const fileUploadFunction = (req, res, next) => {
-    upload.single('clientfile')(req, res, (err) => {
-        if (err) {
-            return responseFunction(res, 400, 'File upload failed', null, false);
-        }
-        next();
-    })
-}
 
 router.get('/test', (req, res) => {
     res.send('Auth routes are working!');
@@ -95,55 +87,25 @@ router.post('/sendotp', async (req, res) => {
 })
 
 
-router.post('/register', fileUploadFunction, async (req,res, next)=>{
+router.post('/register', async (req, res, next) => {
     // console.log(req.file)
 
     try {
-        const { name, email, password, otp } = req.body;
+        const { name, email, password, otp, profilePic } = req.body;
         let user = await User.findOne({ email: email });
         let verificationQueue = await Verification.findOne({ email: email });
         if (user) {
-            if (req.file && req.file.path) {
-                fs.unlink(req.file.path, (err) => {
-                    if (err) {
-                        console.log(err);
-                    }
-                    else {
-                        console.log('File deleted successfully');
-                    }
-                })
-            }
+            return responseFunction(res, 400, 'User already exists', null, false);
         }
 
         if (!verificationQueue) {
-            if (req.file && req.file.path) {
-                fs.unlink(req.file.path, (err) => {
-                    if (err) {
-                        console.log(err);
-                    }
-                    else {
-                        console.log('File deleted successfully');
-                    }
-                })
-            }
+
             return responseFunction(res, 400, 'Please send otp first', null, false);
         }
 
 
         const isMatch = await bcrypt.compare(otp, verificationQueue.code);
         if (!isMatch) {
-
-            if (req.file && req.file.path) {
-                fs.unlink(req.file.path, (err) => {
-                    if (err) {
-                        console.error('Error deleting file:', err);
-                    } else {
-                        console.log('File deleted successfully');
-                    }
-                });
-            }
-
-
             return responseFunction(res, 400, 'Invalid OTP', null, false);
         }
 
@@ -151,14 +113,14 @@ router.post('/register', fileUploadFunction, async (req,res, next)=>{
             name: name,
             email: email,
             password: password,
-            profilePic: req.file.path
+            profilePic: profilePic
         });
         await user.save();
         await Verification.deleteOne({ email: email });
         return responseFunction(res, 200, 'registered successfully', null, true);
 
     }
-    catch (err){
+    catch (err) {
         console.log(err);
         return responseFunction(res, 500, 'Internal server error', null, false);
     }
@@ -181,12 +143,20 @@ router.post('/login', async (req, res, next) => {
         }
 
 
-        const authToken = jwt.sign({userId: user._id}, process.env.JWT_SECRET_KEY,{expiresIn : '10m'})
+        const authToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: '10m' })
         const refreshToken = jwt.sign({ userId: user._id }, process.env.JWT_REFRESH_SECRET_KEY, { expiresIn: '50m' });
 
 
-        res.cookie('authToken', authToken , {httpOnly : true});
-        res.cookie('refreshToken', refreshToken, { httpOnly: true });
+        res.cookie('authToken', authToken, {
+            sameSite: 'none',
+            httpOnly: true,
+            secure: true
+        });
+        res.cookie('refreshToken', refreshToken, {
+            sameSite: 'none',
+            httpOnly: true,
+            secure: true
+        });
         return responseFunction(res, 200, 'Logged in successfully', {
             authToken: authToken,
             refreshToken: refreshToken
@@ -215,7 +185,7 @@ router.post('/logout', authTokenHandler, async (req, res, next) => {
 })
 
 
-router.get('/getuser', authTokenHandler , async (req, res, next) =>{
+router.get('/getuser', authTokenHandler, async (req, res, next) => {
     try {
         const user = await User.findById(req.userId);
         if (!user) {
@@ -224,10 +194,85 @@ router.get('/getuser', authTokenHandler , async (req, res, next) =>{
         return responseFunction(res, 200, 'User found', user, true);
 
     }
-    catch(err){
+    catch (err) {
         next(err);
     }
 })
+
+router.post('/changepassword', async (req, res, next) => {
+    try {
+        const { email, otp, password } = req.body;
+
+        let user = await User.findOne({ email: email });
+        let verificationQueue = await Verification.findOne({ email: email });
+        if (!user) {
+            return responseFunction(res, 400, "User doesn't  exist", null, false);
+        }
+
+        if (!verificationQueue) {
+
+            return responseFunction(res, 400, 'Please send otp first', null, false);
+        }
+
+
+        const isMatch = await bcrypt.compare(otp, verificationQueue.code);
+
+        if (!isMatch) {
+            return responseFunction(res, 400, 'Invalid OTP', null, false);
+        }
+
+        user.password = password;
+        await user.save();
+        await Verification.deleteOne({ email: email });
+
+
+        return responseFunction(res, 200, 'Password changed successfully', null, true);
+
+
+    }
+    catch (err) {
+        next(err);
+    }
+})
+
+const getObjectURL = async (key) => {
+    const params = {
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: key,
+    }
+
+    return await getSignedUrl(s3Client, new GetObjectCommand(params));
+
+}
+const postObjectURL = async (filename, contentType) => {
+    const params = {
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: filename,
+        ContentType: contentType,
+    }
+
+    return await getSignedUrl(s3Client, new PutObjectCommand(params));
+
+}
+
+
+
+router.get('/generatepostobjecturl', async (req, res, next) => {
+    try {
+        const timeinms = new Date().getTime();
+        const signedUrl = await postObjectURL(timeinms.toString(), '');
+        return responseFunction(res, 200, 'signed url generated', {
+            signedUrl: signedUrl,
+            filekey: timeinms.toString()
+        }, true);
+    }
+    catch (err) {
+        next(err);
+
+    }
+})
+
+
 router.use(errorHandler)
 
 module.exports = router;

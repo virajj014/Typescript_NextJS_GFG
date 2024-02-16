@@ -7,7 +7,7 @@ import { AppDispatch, useAppSelector } from '@/redux/store';
 import { useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
 import { logIn, logOut } from '@/redux/features/auth-slice';
-
+import axios from 'axios';
 
 interface FormData {
 
@@ -16,7 +16,7 @@ interface FormData {
 }
 
 
-const page = () => {
+const Page = () => {
   const router = useRouter()
   const auth = useAppSelector((state) => state.authReducer)
   const dispatch = useDispatch<AppDispatch>()
@@ -48,13 +48,18 @@ const page = () => {
         password: formData.password
       }),
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        // allow access control origin
+        'Access-Control-Allow-Origin': '*'
       },
       credentials: 'include'
     })
 
     let data = await res.json()
     if (data.ok) {
+      // console.log(data.data)
+      // localStorage.setItem('authToken', data.data.authToken)
+      // localStorage.setItem('refreshToken', data.data.refreshToken)
       toast.success('Login Success')
       getUserData()
     }
@@ -62,9 +67,14 @@ const page = () => {
       toast.error(data.message)
     }
   }
-  const getUserData = async () => { 
+  const getUserData = async () => {
     let res = await fetch(process.env.NEXT_PUBLIC_API_URL + '/auth/getuser', {
       method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        // allow access control origin
+        'Access-Control-Allow-Origin': '*'
+      },
       credentials: 'include'
     })
     let data = await res.json()
@@ -81,27 +91,29 @@ const page = () => {
 
   return (
     <div className={styles.authpage}>
-      <h1>Login</h1>
-      <div className={styles.inputcontaner}>
-        <label htmlFor="email">Email</label>
-        <input type="email" name="email" id="email" value={formData.email} onChange={handleInputChange} />
-      </div>
-      <div className={styles.inputcontaner}>
-        <label htmlFor="password">Password</label>
-        <input type="password" name="password" id="password" value={formData.password} onChange={handleInputChange} />
-      </div>
+      <div className={styles.authcontainer}>
+        <h1>Login</h1>
+        <div className={styles.inputcontaner}>
+          <label htmlFor="email">Email</label>
+          <input type="email" name="email" id="email" value={formData.email} onChange={handleInputChange} />
+        </div>
+        <div className={styles.inputcontaner}>
+          <label htmlFor="password">Password</label>
+          <input type="password" name="password" id="password" value={formData.password} onChange={handleInputChange} />
+        </div>
 
-      <button
-        className={styles.button1}
-        type="button"
-        onClick={handleLogin}
-      >Login</button>
+        <button
+          className={styles.button1}
+          type="button"
+          onClick={handleLogin}
+        >Login</button>
 
-      <Link href="/forgotpassword">
-        Forgot Password?
-      </Link>
+        <Link href="/forgotpassword">
+          Forgot Password?
+        </Link>
+      </div>
     </div>
   )
 }
 
-export default page
+export default Page

@@ -126,7 +126,7 @@ router.get('/generatepostobjecturl', authTokenHandler, async (req, res, next) =>
 router.post('/sharefile', authTokenHandler, async (req, res, next) => {
     try {
         const { receiveremail, filename, filekey, fileType } = req.body;
-
+        // console.log( receiveremail, filename, filekey, fileType)
         let senderuser = await User.findOne({ _id: req.userId });
         let recieveruser = await User.findOne({ email: receiveremail });
         if (!senderuser) {
@@ -219,6 +219,22 @@ router.get('/getfiles', authTokenHandler, async (req, res, next) => {
     }
 })
 
+
+router.get('/gets3urlbykey/:key', authTokenHandler, async (req, res, next) => {
+    try {
+        const {key} = req.params;
+        const signedUrl = await getObjectURL(key);
+        if(!signedUrl){
+            return responseFunction(res, 400, 'signed url not found', null, false);
+        }
+        return responseFunction(res, 200, 'signed url generated', {
+            signedUrl: signedUrl,
+        }, true);
+    }
+    catch (err) {
+        next(err);
+    }
+})
 
 router.use(errorHandler)
 

@@ -8,7 +8,7 @@ const fileSchema = new mongoose.Schema({
     fileurl: {required:true , type:String},
     filename: {required:true , type:String},
     sharedAt: {required:true , type:Date},
-    fileType : {required:true , type:String}
+    fileType : {type:String}
 },{timestamps: true})
 
 const userSchema = new mongoose.Schema({

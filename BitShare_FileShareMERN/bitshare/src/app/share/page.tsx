@@ -13,7 +13,7 @@ let socket: any = null;
 let apiurl: string = `${process.env.NEXT_PUBLIC_API_URL}`
 
 
-const page = () => {
+const Page = () => {
   const dispatch = useDispatch<AppDispatch>()
 
   const auth = useAppSelector((state) => state.authReducer)
@@ -132,7 +132,7 @@ const page = () => {
     setUploading(true);
     const options = {
       method: 'PUT',
-      body: file
+      body: file,
     };
 
     let res = await fetch(url, options)
@@ -160,7 +160,38 @@ const page = () => {
       setUploading(false)
       return;
     }
-    toast.success('File uploaded successfully')
+    // toast.success('File uploaded successfully')
+
+
+    let res = await fetch(process.env.NEXT_PUBLIC_API_URL + '/file/sharefile', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        receiveremail: email,
+        filename: fileName,
+        filekey: filekey,
+        fileType: file.type
+      })
+    })
+
+    let data = await res.json()
+    setUploading(false)
+    if (data.ok) {
+      toast.success('File shared successfully');
+      // socket.emit('uploaded', {
+      //   from: auth.user.email,
+      //   to: email,
+      // })
+      Router.push('/myfiles');
+    }
+
+    else {
+      toast.error('Failed to share file')
+    }
+
   }
 
 
@@ -168,8 +199,8 @@ const page = () => {
 
 
 
-  const [socketId, setSocketId] = useState<string>("")
-  socket = useMemo(() => io(apiurl), [])
+  // const [socketId, setSocketId] = useState<string>("")
+  // socket = useMemo(() => io(apiurl), [])
 
   const router = useRouter()
 
@@ -181,22 +212,22 @@ const page = () => {
   }, [auth]);
 
 
-  useEffect(() => {
-    socket.on('connect', () => {
-      console.log(socket.id)
-      setSocketId(socket.id)
-    })
+  // useEffect(() => {
+  //   socket.on('connect', () => {
+  //     console.log(socket.id)
+  //     setSocketId(socket.id)
+  //   })
 
-    if (auth.user) { socket.emit('joinself', auth.user.email) }
-    else {
-      getuserdata().then((user) => {
-        socket.emit('joinself', user.email)
-      })
-    }
+  //   if (auth.user) { socket.emit('joinself', auth.user.email) }
+  //   else {
+  //     getuserdata().then((user) => {
+  //       socket.emit('joinself', user.email)
+  //     })
+  //   }
 
 
 
-  }, [])
+  // }, [])
 
 
   const getuserdata = async () => {
@@ -222,79 +253,73 @@ const page = () => {
 
   return (
     <div className={styles.authpage}>
-      <div className={styles.inputcontaner}>
-        <label htmlFor="email">Receiver's email</label>
-        <input type="email" name="email" id="email" value={email} onChange={e => setEmail(e.target.value)} />
-      </div>
-      <div className={styles.inputcontaner}>
-        <label htmlFor="filename">File Name</label>
-        <input type="text" name="filename" id="filename" value={fileName} onChange={e => setFileName(e.target.value)} />
-      </div>
+      <div className={styles.authcontainer}>
+        <div className={styles.inputcontaner}>
+          <label htmlFor="email">Receiver&apos;s email</label>
+          <input type="email" name="email" id="email" value={email} onChange={e => setEmail(e.target.value)} />
+        </div>
+        <div className={styles.inputcontaner}>
+          <label htmlFor="filename">File Name</label>
+          <input type="text" name="filename" id="filename" value={fileName} onChange={e => setFileName(e.target.value)} />
+        </div>
 
 
-      <div className={styles.inputcontaner}>
-        {
-          file ?
-            <div className={styles.filecard}>
-              <div className={styles.left}>
-                <p>{file.name}</p>
-                <p>{(file.size / 1024).toFixed(2)} KB</p>
+        <div className={styles.inputcontaner}>
+          {
+            file ?
+              <div className={styles.filecard}>
+                <div className={styles.left}>
+                  <p>{file.name}</p>
+                  <p>{(file.size / 1024).toFixed(2)} KB</p>
+                </div>
+
+                <div className={styles.right}>
+
+                  <svg
+                    onClick={removeFile}
+                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                  </svg>
+
+                  <svg
+                    onClick={viewFile}
+
+                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  </svg>
+
+                </div>
+
               </div>
-
-              <div className={styles.right}>
-
-                <svg
-                  onClick={removeFile}
-                  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                </svg>
-
-                <svg
-                  onClick={viewFile}
-
-                  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                </svg>
-
+              :
+              <div className={styles.dropzone} {...getRootProps()}>
+                <input {...getInputProps()} />
+                {
+                  isDragActive ?
+                    <p>Drop the files here ...</p> :
+                    <div className={styles.droptext}>
+                      <p>Drag &apos;n&apos; drop some files here</p>
+                      <p>or</p>
+                      <p>click here to select files</p>
+                    </div>
+                }
               </div>
+          }
+        </div>
 
-            </div>
-            :
-            <div className={styles.dropzone} {...getRootProps()}>
-              <input {...getInputProps()} />
-              {
-                isDragActive ?
-                  <p>Drop the files here ...</p> :
-                  <div className={styles.droptext}>
-                    <p>Drag 'n' drop some files here</p>
-                    <p>or</p>
-                    <p>click here to select files</p>
-                  </div>
-              }
-            </div>
-        }
+
+        <button
+          className={styles.button1}
+          type="button"
+          onClick={handleUpload}
+        >Send</button>
       </div>
-
-
-      <button
-        className={styles.button1}
-        type="button"
-        onClick={handleUpload}
-      >Send</button>
 
 
       {uploading &&
         <div className={styles.uploadpopup}>
-          <div className={styles.uploadsectionrow}>
-            <div className={styles.uploadbar}>
-              <div
-                style={{ width: `${uploadpercent}%`, backgroundColor: 'lightgreen', height: '100%', borderRadius: '5px' }}
-              ></div>
-            </div>
-            <p>{uploadpercent}%</p>
 
-          </div>
           <p>Uploading...</p>
 
         </div>
@@ -303,4 +328,4 @@ const page = () => {
   )
 }
 
-export default page
+export default Page

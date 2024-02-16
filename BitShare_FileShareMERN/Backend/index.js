@@ -28,15 +28,15 @@ const server = createServer(app);
 
 
 
-const io = new Server(server, {
-    cors: {
-        origin: 'http://localhost:3000'
-    }
-})
+// const io = new Server(server, {
+//     cors: {
+//         origin: process.env.FRONTEND_URL
+//     }
+// })
 
 
 
-const allowedOrigins = ['http://localhost:3000']; // Add more origins as needed
+const allowedOrigins = [process.env.FRONTEND_URL]; // Add more origins as needed
 app.use(
     cors({
         origin: function (origin, callback) {
@@ -51,37 +51,43 @@ app.use(
 );
 
 app.use(bodyParser.json());
-app.use(cookieParser());
+app.use(cookieParser({
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    maxAge: 1000 * 60 * 60 * 24 * 7,
+    signed: true,
+}));
 app.use('/public', express.static('public'));
 
 
 
-io.on('connection', (socket) => {
-    console.log('new connection', socket.id);
-    socket.on('disconnect', () => {
-        console.log('user disconnected');
-    })
+// io.on('connection', (socket) => {
+//     console.log('new connection', socket.id);
+//     socket.on('disconnect', () => {
+//         console.log('user disconnected');
+//     })
 
 
-    socket.on('joinself', (data) => {
-        console.log('joining self', data);
-        socket.join(data);
-    })
+//     socket.on('joinself', (data) => {
+//         console.log('joining self', data);
+//         socket.join(data);
+//     })
 
 
-    socket.on('uploaded',(data)=>{
-        let sender = data.from;
-        let receiver = data.to;
+//     socket.on('uploaded',(data)=>{
+//         let sender = data.from;
+//         let receiver = data.to;
 
-        console.log('uploaded', data);
+//         console.log('uploaded', data);
 
 
-        socket.to(receiver).emit('notify', {
-            from: sender,
-            message: 'New file shared'
-        })
-    })
-})       
+//         socket.to(receiver).emit('notify', {
+//             from: sender,
+//             message: 'New file shared'
+//         })
+//     })
+// })       
 app.use('/auth', authRoutes);
 app.use('/file', fileShareRoutes);
 
